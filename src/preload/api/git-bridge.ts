@@ -112,6 +112,11 @@ export const gitApi = {
     baseRef: string
     connectionId?: string
   }): Promise<void> => ipcRenderer.invoke('git:rebaseFromBase', args),
+  merge: (args: {
+    worktreePath: string
+    refToMerge: string
+    connectionId?: string
+  }): Promise<void> => ipcRenderer.invoke('git:merge', args),
   branchDiff: (args: {
     worktreePath: string
     compare: { baseRef: string; baseOid: string; headOid: string; mergeBase: string }

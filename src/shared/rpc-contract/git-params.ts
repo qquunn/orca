@@ -237,6 +237,18 @@ export const GitRebaseFromBase = WorktreeSelector.extend({
     )
 })
 
+export const GitMerge = WorktreeSelector.extend({
+  refToMerge: z
+    .unknown()
+    .transform((v) => (typeof v === 'string' ? v : ''))
+    .pipe(
+      z
+        .string()
+        .min(1, 'Missing ref to merge')
+        .refine((value) => !value.startsWith('-'), 'Ref must not start with -')
+    )
+})
+
 export const GitCheckout = WorktreeSelector.extend({
   branch: z
     .unknown()

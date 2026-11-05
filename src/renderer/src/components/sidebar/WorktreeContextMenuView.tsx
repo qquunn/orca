@@ -34,6 +34,7 @@ import { isEventTargetInsideCurrentTarget } from './worktree-card-dom-events'
 import { translate } from '@/i18n/i18n'
 import { useOptionalShortcutLabel } from '@/hooks/useShortcutLabel'
 import type { WorktreeContextMenuModel } from './use-worktree-context-menu-model'
+import { WorktreeMergeTargetSubMenu } from './WorktreeMergeTargetSubMenu'
 import { WorktreeStatusMenuItems } from './WorktreeStatusMenuItems'
 import { WorktreeContextMenuOverlays } from './WorktreeContextMenuOverlays'
 import {
@@ -68,6 +69,7 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
     handleCopyPath,
     handleCreateGroupFromRepo,
     handleDelete,
+    handleMergeIntoTarget,
     handleMoveProjectToGroup,
     handleOpenParent,
     handleOpenParentPicker,
@@ -283,6 +285,14 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
                   <DropdownMenuSeparator />
                 </>
               )}
+              {worktree.branch ? (
+                <WorktreeMergeTargetSubMenu
+                  child={worktree}
+                  parentWorktreeId={validParentWorktreeId}
+                  disabled={isDeleting}
+                  onSelect={handleMergeIntoTarget}
+                />
+              ) : null}
             </>
           )}
           {isMultiContext && hasAnyContextLineage ? (

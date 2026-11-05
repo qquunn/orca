@@ -200,6 +200,13 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
         baseRef
       })
     },
+    merge: async ({ worktreePath, refToMerge }) => {
+      const worktree = await resolveRuntimeWorktreeByPath(worktreePath)
+      await callRuntimeResult('git.merge', {
+        worktree: toRuntimeWorktreeSelector(worktree.id),
+        refToMerge
+      })
+    },
     branchDiff: async ({ worktreePath, filePath, compare, oldPath }) => {
       const file = await resolveRuntimeFilePath(filePath, worktreePath)
       return callRuntimeResult('git.branchDiff', {

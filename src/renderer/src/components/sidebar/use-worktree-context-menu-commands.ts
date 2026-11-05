@@ -11,6 +11,7 @@ import { runSleepWorktrees } from './sleep-worktree-flow'
 import { collectTwinHostsAlsoSlept } from './sleep-twin-confirmation'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { resolveWorktreeDisplayName } from '@/lib/worktree-default-display-name'
+import { branchDisplayName } from './WorktreeCardHelpers'
 import { formatClipboardFilePath } from '@/lib/clipboard-file-path'
 import { getWorktreeRowLocalPathOpenOwner } from '@/lib/worktree-row-open-in-owner'
 import { VIRTUALIZED_SCROLL_ANCHOR_RECORD_EVENT } from '@/hooks/useVirtualizedScrollAnchor'
@@ -18,6 +19,10 @@ import {
   planWorkspaceStatusAssignment,
   preserveDeleteSiblingPosition
 } from './worktree-context-menu-policy'
+import { mergeRuntimeGit } from '@/runtime/runtime-git-sync-client'
+import { resolveGitOperationTarget } from '@/store/slices/editor/actions/git-operation-target'
+import { translate } from '@/i18n/i18n'
+import { toast } from 'sonner'
 
 export function useWorktreeContextMenuCommands(args: {
   activeContextWorktrees: readonly Worktree[]
@@ -185,6 +190,68 @@ export function useWorktreeContextMenuCommands(args: {
       activateAndRevealWorktree(args.validParentWorktreeId, { navigationIntent: 'user-open' })
     }
   }, [args.validParentWorktreeId])
+  const handleMergeIntoTarget = useCallback(
+    async (targetWorktree: Worktree) => {
+      const childBranch = args.worktree.branch
+      if (!childBranch) {
+        return
+      }
+      args.setMenuOpenState(false)
+      const target = resolveGitOperationTarget(args.getState(), targetWorktree.id)
+      try {
+        await mergeRuntimeGit(
+          {
+            target,
+            worktreeId: targetWorktree.id,
+            worktreePath: targetWorktree.path,
+            connectionId: args.repo?.connectionId ?? undefined
+          },
+          childBranch
+        )
+        toast.success(
+          translate(
+            'auto.components.sidebar.WorktreeContextMenu.mergeIntoTargetSuccess',
+            'Merged {{branch}} into {{target}}.',
+            { branch: branchDisplayName(childBranch), target: targetWorktree.displayName }
+          )
+        )
+      } catch (error) {
+        let conflicted = false
+        try {
+          const operation = await window.api.git.conflictOperation({
+            worktreePath: targetWorktree.path,
+            connectionId: args.repo?.connectionId ?? undefined
+          })
+          conflicted = operation === 'merge'
+        } catch {
+          // Conflict probe failure falls through to the generic error toast.
+        }
+        if (conflicted) {
+          activateAndRevealWorktree(targetWorktree.id, { navigationIntent: 'user-open' })
+          const state = args.getState()
+          state.setRightSidebarTab('source-control')
+          state.setRightSidebarOpen(true)
+          toast.warning(
+            translate(
+              'auto.components.sidebar.WorktreeContextMenu.mergeIntoTargetConflicts',
+              'Merge has conflicts. Resolve them in {{target}}.',
+              { target: targetWorktree.displayName }
+            )
+          )
+          return
+        }
+        const message = error instanceof Error ? error.message : String(error)
+        toast.error(
+          translate(
+            'auto.components.sidebar.WorktreeContextMenu.mergeIntoTargetFailed',
+            'Merge failed: {{message}}',
+            { message }
+          )
+        )
+      }
+    },
+    [args]
+  )
   return {
     handleAssignWorkspaceStatus,
     handleCloseTerminals,
@@ -193,6 +260,7 @@ export function useWorktreeContextMenuCommands(args: {
     handleCreateGroupDialogOpenChange,
     handleCreateGroupFromRepo,
     handleDelete,
+    handleMergeIntoTarget,
     handleMoveProjectToGroup,
     handleOpenParent,
     handleRemoveProjectFromGroup,
