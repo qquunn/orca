@@ -44,6 +44,11 @@ export type GitOperationApi = {
     baseRef: string
     connectionId?: string
   }) => Promise<void>
+  merge: (args: {
+    worktreePath: string
+    refToMerge: string
+    connectionId?: string
+  }) => Promise<void>
   commit: (args: {
     worktreePath: string
     message: string

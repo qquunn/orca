@@ -117,6 +117,21 @@ export async function gitFastForward(
   )
 }
 
+export async function gitMerge(
+  worktreePath: string,
+  refToMerge: string,
+  options: GitRuntimeOptions = {}
+): Promise<void> {
+  postponeRepoRefMaintenance()
+  await withRepoRefMaintenancePaused('git-merge', () =>
+    runWithGitWorktreeOperationLock(worktreePath, options.signal, () =>
+      runWithGitReadCacheInvalidation(() =>
+        gitExecFileAsync(['merge', refToMerge], gitOptionsForWorktree(worktreePath, options))
+      )
+    )
+  )
+}
+
 export async function gitFetch(
   worktreePath: string,
   pushTarget?: GitPushTarget,

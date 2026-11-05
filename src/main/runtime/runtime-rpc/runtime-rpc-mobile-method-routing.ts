@@ -77,6 +77,7 @@ export const EXECUTION_HOST_METHODS = [
   'git.generatePullRequestFields',
   'git.history',
   'git.localBranches',
+  'git.merge',
   'git.pull',
   'git.push',
   'git.rebaseFromBase',

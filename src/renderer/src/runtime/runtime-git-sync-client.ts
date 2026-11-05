@@ -181,6 +181,27 @@ export async function rebaseRuntimeGitFromBase(
   )
 }
 
+export async function mergeRuntimeGit(
+  context: RuntimeGitContext,
+  refToMerge: string
+): Promise<void> {
+  const target = context.target
+  if (target.kind === 'local' || !context.worktreeId) {
+    await window.api.git.merge({
+      worktreePath: resolveLocalWorktreePath(context),
+      refToMerge,
+      connectionId: context.connectionId
+    })
+    return
+  }
+  await callRuntimeRpc(
+    target,
+    'git.merge',
+    { worktree: toRuntimeWorktreeSelector(context.worktreeId), refToMerge },
+    { timeoutMs: 30_000 }
+  )
+}
+
 export async function pushRuntimeGit(
   context: RuntimeGitContext,
   args: { publish?: boolean; pushTarget?: GitPushTarget; forceWithLease?: boolean } = {}

@@ -1,6 +1,12 @@
 import { ipcMain } from 'electron'
 import type { GitPushTarget } from '../../../../shared/worktree/types'
-import { gitFastForward, gitPull, gitPullRebaseFromBase, gitPush } from '../../../git/remote'
+import {
+  gitFastForward,
+  gitMerge,
+  gitPull,
+  gitPullRebaseFromBase,
+  gitPush
+} from '../../../git/remote'
 import { validateGitPushTarget } from '../../../git/push-target-validation'
 import { resolveRegisteredWorktreePath } from '../../registered-worktree-roots-cache'
 import { getLocalGitOptionsForRegisteredWorktree } from '../../local-worktree-runtime-options'
@@ -134,6 +140,26 @@ export function registerGitRemoteBranchMutationHandlers(context: FilesystemHandl
         })
       }
       await gitFastForward(worktreePath, materializedPushTarget, {
+        ...gitOptions,
+        admissionTier: 'interactive'
+      })
+    }
+  )
+
+  ipcMain.handle(
+    'git:merge',
+    async (
+      _event,
+      args: { worktreePath: string; refToMerge: string; connectionId?: string }
+    ): Promise<void> => {
+      requireReachableGitRoute(getConnectionExecutionHostId(args.connectionId))
+      const worktreePath = await resolveRegisteredWorktreePath(args.worktreePath, store)
+      const gitOptions = getLocalGitOptionsForRegisteredWorktree(
+        store,
+        args.worktreePath,
+        worktreePath
+      )
+      await gitMerge(worktreePath, args.refToMerge, {
         ...gitOptions,
         admissionTier: 'interactive'
       })

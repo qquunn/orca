@@ -10,6 +10,7 @@ import {
   GitCommit,
   GitCommitCompare,
   GitFilePath,
+  GitMerge,
   GitResolveConflict,
   GitForkSync,
   GitHistory,
@@ -191,6 +192,13 @@ export const GIT_METHODS = [
     params: GitRebaseFromBase,
     handler: async (params, { runtime }) =>
       runtime.rebaseRuntimeGitFromBase(params.worktree, params.baseRef)
+  }),
+  defineMethod({
+    name: 'git.merge',
+    permission: 'workspace',
+    params: GitMerge,
+    handler: async (params, { runtime }) =>
+      runtime.mergeRuntimeGit(params.worktree, params.refToMerge)
   }),
   defineMethod({
     name: 'git.push',
