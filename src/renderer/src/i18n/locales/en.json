@@ -6527,10 +6527,13 @@
           "sleepWithDescendantsDescription": "Close active panels in this workspace and every nested descendant to free up memory and CPU.",
           "deleteWithDescendants": "Delete with Descendants…",
           "mergeInto": "Merge into…",
+          "mergeIntoSourceBranch": "Merge into {{branch}}",
           "mergeIntoTargetSuccess": "Merged {{branch}} into {{target}}.",
           "mergeIntoTargetConflicts": "Merge has conflicts. Resolve them in {{target}}.",
           "mergeIntoTargetFailed": "Merge failed: {{message}}",
           "mergeTargetParent": "Parent workspace",
+          "mergeTargetSourceBranch": "Source branch",
+          "mergeTargetOther": "Other workspace",
           "mergeTargetTask": "Task {{taskId}}",
           "mergeTargetIssue": "Issue #{{number}}",
           "mergeTargetTaskSource": "{{provider}} task"

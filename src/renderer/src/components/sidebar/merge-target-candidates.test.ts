@@ -61,7 +61,7 @@ describe('getMergeTargetCandidates', () => {
     expect(candidates[0]).toMatchObject({ isParent: true, taskSource: null })
   })
 
-  it('includes worktrees linked by taskSourceContext, linkedIssue, and orchestration taskId', () => {
+  it('includes all branch-bearing repo worktrees, tagging task links where present', () => {
     const orchestrated = makeWorktree({
       id: 'repo::/workspaces/orchestrated',
       displayName: 'Orchestrated',
@@ -100,12 +100,14 @@ describe('getMergeTargetCandidates', () => {
     expect(candidates.map((candidate) => candidate.worktree.id)).toEqual([
       issueLinked.id,
       orchestrated.id,
-      sourceLinked.id
+      sourceLinked.id,
+      unlinked.id
     ])
     expect(candidates.map((candidate) => candidate.taskSource?.kind)).toEqual([
       'issue',
       'orchestration-task',
-      'task-source'
+      'task-source',
+      undefined
     ])
   })
 
@@ -159,5 +161,54 @@ describe('getMergeTargetCandidates', () => {
       isParent: true,
       taskSource: { kind: 'issue', number: 7 }
     })
+  })
+
+  it('marks the worktree checked out on the create base as the source-branch shortcut', () => {
+    const fromMain = makeWorktree({ baseRef: 'origin/main' })
+    const main = makeWorktree({
+      id: 'repo::/workspaces/main',
+      displayName: 'Main',
+      branch: 'refs/heads/main'
+    })
+    const unrelated = makeWorktree({
+      id: 'repo::/workspaces/unrelated',
+      displayName: 'Aaa unrelated',
+      branch: 'refs/heads/feature/other'
+    })
+
+    const candidates = getMergeTargetCandidates({
+      child: fromMain,
+      parentWorktree: null,
+      worktrees: [unrelated, main, fromMain],
+      lineageById: {}
+    })
+
+    expect(candidates.map((candidate) => candidate.worktree.id)).toEqual([main.id, unrelated.id])
+    expect(candidates[0]).toMatchObject({ isSourceBranch: true })
+    expect(candidates[1]).toMatchObject({ isSourceBranch: false })
+  })
+
+  it('prefers an exact branch match over the remote-prefix fallback', () => {
+    const fromFeature = makeWorktree({ baseRef: 'feature/topic' })
+    const exact = makeWorktree({
+      id: 'repo::/workspaces/exact',
+      displayName: 'Exact',
+      branch: 'refs/heads/feature/topic'
+    })
+    const tailOnly = makeWorktree({
+      id: 'repo::/workspaces/tail',
+      displayName: 'Tail',
+      branch: 'refs/heads/topic'
+    })
+
+    const candidates = getMergeTargetCandidates({
+      child: fromFeature,
+      parentWorktree: null,
+      worktrees: [tailOnly, exact, fromFeature],
+      lineageById: {}
+    })
+
+    expect(candidates.filter((candidate) => candidate.isSourceBranch)).toHaveLength(1)
+    expect(candidates[0]).toMatchObject({ worktree: { id: exact.id }, isSourceBranch: true })
   })
 })

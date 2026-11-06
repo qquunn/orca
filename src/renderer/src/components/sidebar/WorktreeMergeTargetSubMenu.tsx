@@ -15,13 +15,30 @@ import { getMergeTargetCandidates, type MergeTargetCandidate } from './merge-tar
 import type { Worktree } from '../../../../shared/worktree/types'
 
 function getMergeTargetSourceLabel(candidate: MergeTargetCandidate): string {
-  const source = candidate.taskSource
-  if (!source) {
+  if (candidate.isParent) {
     return translate(
       'auto.components.sidebar.WorktreeContextMenu.mergeTargetParent',
       'Parent workspace'
     )
   }
+  const source = candidate.taskSource
+  if (candidate.isSourceBranch) {
+    const sourceBranch = translate(
+      'auto.components.sidebar.WorktreeContextMenu.mergeTargetSourceBranch',
+      'Source branch'
+    )
+    return source ? `${sourceBranch} · ${taskSourceLabel(source)}` : sourceBranch
+  }
+  if (!source) {
+    return translate(
+      'auto.components.sidebar.WorktreeContextMenu.mergeTargetOther',
+      'Other workspace'
+    )
+  }
+  return taskSourceLabel(source)
+}
+
+function taskSourceLabel(source: NonNullable<MergeTargetCandidate['taskSource']>): string {
   if (source.kind === 'orchestration-task') {
     return translate(
       'auto.components.sidebar.WorktreeContextMenu.mergeTargetTask',
@@ -99,9 +116,20 @@ export function WorktreeMergeTargetSubMenu({
     return null
   }
   const parentCandidate = candidates.find((candidate) => candidate.isParent)
+  const sourceCandidate = candidates.find((candidate) => candidate.isSourceBranch) ?? null
   const taskCandidates = candidates.filter((candidate) => !candidate.isParent)
   return (
     <>
+      {sourceCandidate ? (
+        <DropdownMenuItem disabled={disabled} onSelect={() => onSelect(sourceCandidate.worktree)}>
+          <GitMerge className="size-3.5" />
+          {translate(
+            'auto.components.sidebar.WorktreeContextMenu.mergeIntoSourceBranch',
+            'Merge into {{branch}}',
+            { branch: branchDisplayName(sourceCandidate.worktree.branch) }
+          )}
+        </DropdownMenuItem>
+      ) : null}
       <DropdownMenuSub>
         <DropdownMenuSubTrigger disabled={disabled}>
           <GitMerge className="size-3.5" />
