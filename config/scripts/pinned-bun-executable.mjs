@@ -6,6 +6,16 @@ export function readPinnedBunVersion(root) {
   return readFileSync(path.join(root, 'config', '.bun-version'), 'utf8').trim()
 }
 
+const DEFAULT_BUN_PROBE_TIMEOUT_MS = 2000
+
+// Slower hosts (cold AV/encryption scans) can exceed the default probe; allow an override.
+function bunProbeTimeoutMs() {
+  const raw = process.env.ORCA_BUN_PROBE_TIMEOUT_MS
+  if (raw === undefined) return DEFAULT_BUN_PROBE_TIMEOUT_MS
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_BUN_PROBE_TIMEOUT_MS
+}
+
 /** `bun --version` of `program`, or null when it does not run. */
 export function probeBunVersion(program, root, runProcessSync) {
   try {
@@ -14,7 +24,7 @@ export function probeBunVersion(program, root, runProcessSync) {
       args: ['--version'],
       cwd: root,
       env: process.env,
-      timeoutMs: 2000,
+      timeoutMs: bunProbeTimeoutMs(),
       maxOutputBytes: 4096
     })
     return probe.code === 0 && !probe.signal && !probe.timedOut ? probe.stdout.trim() : null
