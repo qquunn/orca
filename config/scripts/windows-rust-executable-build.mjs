@@ -88,7 +88,9 @@ export function compileWindowsRustExecutable({
   }
 
   rmSync(`${outputPath}.sha256`, { force: true })
-  const targetDirectory = join(crateRoot, 'target')
+  // Default target dir is inside the crate on D:; the host's transparent-encryption
+  // agent encrypts the resource.rc cargo writes there and rc.exe then fails to compile it.
+  const targetDirectory = process.env.ORCA_CARGO_TARGET_DIR || join(crateRoot, 'target')
   const result = spawnSync(
     'cargo',
     [
